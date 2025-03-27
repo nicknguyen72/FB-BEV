@@ -25,7 +25,6 @@ nuscenes-mini
 nuscenes-mini/
 work_dirs/
 work_dirs_/
-data/
 tests/
 test/
 test2/
@@ -145,7 +144,6 @@ vegetation
 .mypy_cache/
 
 # cython generated cpp
-data
 .vscode
 .idea
 
