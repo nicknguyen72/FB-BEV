@@ -148,7 +148,7 @@ class NuScenesDataset(Custom3DDataset):
                  use_valid_flag=False,
                  img_info_prototype='mmcv',
                  multi_adj_frame_id_cfg=None,
-                 occupancy_path='/mount/dnn_data/occupancy_2023/gts',
+                 occupancy_path='/scratch/group/occupany_network_cap/test/FB-BEV/data/nuscenes/gts',
                  ego_cam='CAM_FRONT',
                  # SOLLOFusion
                  use_sequence_group_flag=False,
@@ -657,9 +657,9 @@ class NuScenesDataset(Custom3DDataset):
                         ):
             results_dict = {}
             
-            if results[0].get('pred_occupancy', None) is not None:
-                results_dict.update(self.evaluate_occupancy(results, show_dir=jsonfile_prefix, save=save))
-                
+#            if results[0].get('pred_occupancy', None) is not None:
+#                results_dict.update(self.evaluate_occupancy(results, show_dir=jsonfile_prefix, save=save))
+           
             if results[0].get('iou', None) is not None:
                 results_dict.update(self.evaluate_mask(results))
             
@@ -721,6 +721,7 @@ class NuScenesDataset(Custom3DDataset):
             info = self.data_infos[index]
             scene_name = info['scene_name']
             sample_token = info['token']
+            print(info)
             occupancy_file_path = osp.join(self.occupancy_path, scene_name, sample_token, 'labels.npz')
             occ_gt = np.load(occupancy_file_path)
  

@@ -19,7 +19,8 @@ from mmdet.apis import multi_gpu_test, set_random_seed
 from mmdet3d.apis.test import custom_multi_gpu_test
 from mmdet.datasets import replace_ImageToTensor
 import os.path as osp
-import time
+import matplotlib.pyplot as plt
+
 if mmdet.__version__ > '2.23.0':
     # If mmdet version > 2.23.0, setup_multi_processes would be imported and
     # used from mmdet instead of mmdet3d.
@@ -219,6 +220,9 @@ def main():
         set_random_seed(args.seed, deterministic=args.deterministic)
 
     # build the dataloader
+    print(f'test dataset: {cfg.data.test}')
+    # cfg.data.test['data_root']='/scratch/group/occupany_network_cap/test/FB-BEV/data/nuscenes/'
+    # cfg.data.test['ann_file']='/scratch/group/occupany_network_cap/test/FB-BEV/data/nuscenes/bevdetv2-nuscenes_infos_val.pkl'
 
     dataset = build_dataset(cfg.data.test)
     
@@ -235,7 +239,7 @@ def main():
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu', revise_keys=[(r'^module\.', ''), (r'^teacher\.', '')])
+    checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu', revise_keys=[(r'^module\.', ''), (r'^teacher\.', '')], strict=False)
     if args.fuse_conv_bn:
         model = fuse_conv_bn(model)
     # old versions did not save class info in checkpoints, this walkaround is
@@ -258,6 +262,8 @@ def main():
         # segmentation dataset has `PALETTE` attribute
         model.PALETTE = dataset.PALETTE
 
+    print("✅ MADE IT BEFORE ERROR IN TEST.PY")
+
     if not distributed:
         model = MMDataParallel(model, device_ids=cfg.gpu_ids)
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir)
@@ -277,6 +283,7 @@ def main():
 
     rank, _ = get_dist_info()
 
+    print("✅ MADE IT AFTER ERROR IN TEST.PY")
     
     if rank == 0:
         if args.out:

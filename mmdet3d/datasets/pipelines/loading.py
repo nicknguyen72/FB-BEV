@@ -1371,32 +1371,69 @@ class LoadAnnotationsBEVDepth(object):
                 rot_mat[:2, :2] @ gt_boxes[:, 7:].unsqueeze(-1)).squeeze(-1)
         return gt_boxes, rot_mat
 
-    def __call__(self, results):
-        gt_boxes, gt_labels = results['ann_infos']
-        gt_boxes, gt_labels = torch.Tensor(np.array(gt_boxes)), torch.tensor(np.array(gt_labels))
-        tta_confg = results.get('tta_config', None)
-        rotate_bda, scale_bda, flip_dx, flip_dy = self.sample_bda_augmentation(tta_confg
-        )
-        bda_mat = torch.zeros(4, 4)
-        bda_mat[3, 3] = 1
-        gt_boxes, bda_rot = self.bev_transform(gt_boxes, rotate_bda, scale_bda,
-                                               flip_dx, flip_dy)
-        bda_mat[:3, :3] = bda_rot
-        if len(gt_boxes) == 0:
-            gt_boxes = torch.zeros(0, 9)
-        results['gt_bboxes_3d'] = \
-            LiDARInstance3DBoxes(gt_boxes, box_dim=gt_boxes.shape[-1],
-                                 origin=(0.5, 0.5, 0.5))
-        results['gt_labels_3d'] = gt_labels
-        imgs, rots, trans, intrins = results['img_inputs'][:4]
-        post_rots, post_trans = results['img_inputs'][4:]
-        results['img_inputs'] = (imgs, rots, trans, intrins, post_rots,
-                                 post_trans, bda_rot)
+#    def __call__(self, results):
+#        gt_boxes, gt_labels = results['ann_infos']
+#        gt_boxes, gt_labels = torch.Tensor(np.array(gt_boxes)), torch.tensor(np.array(gt_labels))
+#        tta_confg = results.get('tta_config', None)
+#        rotate_bda, scale_bda, flip_dx, flip_dy = self.sample_bda_augmentation(tta_confg
+#        )
+#        bda_mat = torch.zeros(4, 4)
+#        bda_mat[3, 3] = 1
+#        gt_boxes, bda_rot = self.bev_transform(gt_boxes, rotate_bda, scale_bda,
+#                                               flip_dx, flip_dy)
+#        bda_mat[:3, :3] = bda_rot
+#        if len(gt_boxes) == 0:
+#            gt_boxes = torch.zeros(0, 9)
+#        results['gt_bboxes_3d'] = \
+#            LiDARInstance3DBoxes(gt_boxes, box_dim=gt_boxes.shape[-1],
+#                                 origin=(0.5, 0.5, 0.5))
+#        results['gt_labels_3d'] = gt_labels
+#        imgs, rots, trans, intrins = results['img_inputs'][:4]
+#        post_rots, post_trans = results['img_inputs'][4:]
+#        results['img_inputs'] = (imgs, rots, trans, intrins, post_rots,
+#                                 post_trans, bda_rot)
+#        
+#        results['flip_dx'] = flip_dx
+#        results['flip_dy'] = flip_dy
+#        results['rotate_bda'] = rotate_bda
+#        results['scale_bda'] = scale_bda
+#
+#        return results
         
+    def __call__(self, results):
+        # Always sample BDA, even if test mode uses defaults
+        tta_config = results.get('tta_config', None)
+        rotate_bda, scale_bda, flip_dx, flip_dy = self.sample_bda_augmentation(tta_config)
+    
+        bda_rot = torch.eye(3)
+        bda_mat = torch.eye(4)
+        bda_mat[3, 3] = 1
+    
+        if self.is_train:
+            gt_boxes, gt_labels = results['ann_infos']
+            gt_boxes = torch.tensor(gt_boxes, dtype=torch.float32)
+            gt_labels = torch.tensor(gt_labels, dtype=torch.long)
+    
+            if len(gt_boxes) == 0:
+                gt_boxes = torch.zeros(0, 9, dtype=torch.float32)
+    
+            gt_boxes, bda_rot = self.bev_transform(gt_boxes, rotate_bda, scale_bda, flip_dx, flip_dy)
+            bda_mat[:3, :3] = bda_rot
+    
+            results['gt_bboxes_3d'] = LiDARInstance3DBoxes(
+                gt_boxes, box_dim=gt_boxes.shape[-1], origin=(0.5, 0.5, 0.5)
+            )
+            results['gt_labels_3d'] = gt_labels
+    
         results['flip_dx'] = flip_dx
         results['flip_dy'] = flip_dy
         results['rotate_bda'] = rotate_bda
         results['scale_bda'] = scale_bda
-
+        results['bda'] = bda_mat
+    
+        imgs, rots, trans, intrins = results['img_inputs'][:4]
+        post_rots, post_trans = results['img_inputs'][4:]
+        results['img_inputs'] = (imgs, rots, trans, intrins, post_rots, post_trans, bda_rot)
+    
         return results
-
+        

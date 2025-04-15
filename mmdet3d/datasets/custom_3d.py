@@ -119,7 +119,13 @@ class Custom3DDataset(Dataset):
             list[dict]: List of annotations.
         """
         # loading data from a file-like object needs file format
-        return mmcv.load(ann_file, file_format='pkl')
+        # return mmcv.load(ann_file, file_format='pkl')
+        if ann_file.endswith('.json'):
+            return mmcv.load(ann_file, file_format='json')
+        elif ann_file.endswith('.pkl') or ann_file.endswith('.pkl.pkl'):
+            return mmcv.load(ann_file, file_format='pkl')
+        else:
+            raise ValueError(f"Unknown annotation file format for {ann_file}")
 
     def get_data_info(self, index):
         """Get data info according to the given index.
@@ -243,6 +249,7 @@ class Custom3DDataset(Dataset):
         return example
 
     def prepare_test_data(self, index):
+        print(f"⚙️  Preparing test data for index {index}")
         """Prepare data for testing.
 
         Args:
@@ -433,6 +440,7 @@ class Custom3DDataset(Dataset):
         return np.random.choice(pool)
 
     def __getitem__(self, idx):
+        print(f"📦 [Dataset] Entered __getitem__({idx})")
         """Get item from infos according to the given index.
 
         Returns:

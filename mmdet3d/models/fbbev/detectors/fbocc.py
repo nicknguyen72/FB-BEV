@@ -90,6 +90,17 @@ class FBOCC(CenterPoint):
         # Occupancy Head
         self.occupancy_head = builder.build_head(occupancy_head) if occupancy_head else None
 
+        ## CAPSTONE MODICATION
+
+        # Fallback dummy forward_projection if none is defined
+        class DummyProjection:
+            def __init__(self):
+                self.nx = [128, 128, 8]
+
+        if not hasattr(self, 'forward_projection') or self.forward_projection is None:
+            self.forward_projection = DummyProjection()
+
+        ## CAPSTONE MODIFICATION
         
         self.readd = readd # fuse voxel features and bev features
         

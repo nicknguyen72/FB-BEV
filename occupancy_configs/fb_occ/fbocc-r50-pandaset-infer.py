@@ -7,7 +7,7 @@
 
 # we follow the online training settings  from solofusion
 num_gpus = 16
-samples_per_gpu = 4
+samples_per_gpu = 1
 num_iters_per_epoch = int(28130 // (num_gpus * samples_per_gpu) * 4.554)
 num_epochs = 20
 checkpoint_epoch_interval = 1
@@ -264,60 +264,60 @@ model = dict(
 dataset_type = 'NuScenesDataset'
 data_root = 'data/pandaset_nuscenes_format/'  # ← your converted dataset path
 file_client_args = dict(backend='disk')
-occupancy_path = '/mount/data/occupancy_cvpr2023/gts'
+occupancy_path = '/scratch/group/occupany_network_cap/test/FB-BEV/data/nuscenes/gts'
 
 
-# train_pipeline = [
-#     dict(
-#         type='PrepareImageInputs',
-#         is_train=True,
-#         data_config=data_config),
-#     dict(
-#         type='LoadAnnotationsBEVDepth',
-#         bda_aug_conf=bda_aug_conf,
-#         classes=class_names),
-#     dict(
-#         type='LoadPointsFromFile',
-#         coord_type='LIDAR',
-#         load_dim=5,
-#         use_dim=5,
-#         file_client_args=file_client_args),
-#     dict(type='PointToMultiViewDepth', downsample=1, grid_config=grid_config),
-#     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-#     dict(type='ObjectNameFilter', classes=class_names),
-#     dict(type='LoadOccupancy', ignore_nonvisible=True, fix_void=fix_void, occupancy_path=occupancy_path),
-#     dict(type='DefaultFormatBundle3D', class_names=class_names),
-#     dict(
-#         type='Collect3D', keys=['img_inputs', 'gt_bboxes_3d', 'gt_labels_3d',  'gt_occupancy', 'gt_depth'
-#                                ])
-# ]
+train_pipeline = [
+    dict(
+        type='PrepareImageInputs',
+        is_train=True,
+        data_config=data_config),
+    dict(
+        type='LoadAnnotationsBEVDepth',
+        bda_aug_conf=bda_aug_conf,
+        classes=class_names),
+    dict(
+        type='LoadPointsFromFile',
+        coord_type='LIDAR',
+        load_dim=5,
+        use_dim=5,
+        file_client_args=file_client_args),
+    dict(type='PointToMultiViewDepth', downsample=1, grid_config=grid_config),
+    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectNameFilter', classes=class_names),
+#    dict(type='LoadOccupancy', ignore_nonvisible=True, fix_void=fix_void, occupancy_path=occupancy_path),
+    dict(type='DefaultFormatBundle3D', class_names=class_names),
+    dict(
+#        type='Collect3D', keys=['img_inputs', 'gt_bboxes_3d', 'gt_labels_3d',  'gt_occupancy', 'gt_depth'])
+        type='Collect3D', keys=['img_inputs'])
+]
 
-# test_pipeline = [
-#     dict(
-#         type='CustomDistMultiScaleFlipAug3D',
-#         tta=False,
-#         transforms=[
-#             dict(type='PrepareImageInputs', data_config=data_config),
-#             dict(
-#                 type='LoadAnnotationsBEVDepth',
-#                 bda_aug_conf=bda_aug_conf,
-#                 classes=class_names,
-#                 is_train=False),
-#             dict(
-#                 type='LoadPointsFromFile',
-#                 coord_type='LIDAR',
-#                 load_dim=5,
-#                 use_dim=5,
-#                 file_client_args=file_client_args),
-#             dict(type='LoadOccupancy',  occupancy_path=occupancy_path),
-#             dict(
-#                 type='DefaultFormatBundle3D',
-#                 class_names=class_names,
-#                 with_label=False),
-#             dict(type='Collect3D', keys=['points', 'img_inputs',  'gt_occupancy', 'visible_mask'])
-#             ]
-#         )
-# ]
+test_pipeline = [
+    dict(
+        type='CustomDistMultiScaleFlipAug3D',
+        tta=False,
+        transforms=[
+            dict(type='PrepareImageInputs', data_config=data_config),
+            dict(
+                type='LoadAnnotationsBEVDepth',
+                bda_aug_conf=bda_aug_conf,
+                classes=class_names,
+                is_train=False),
+            dict(
+                type='LoadPointsFromFile',
+                coord_type='LIDAR',
+                load_dim=5,
+                use_dim=5,
+                file_client_args=file_client_args),
+#            dict(type='LoadOccupancy',  occupancy_path=occupancy_path),
+            dict(
+                type='DefaultFormatBundle3D',
+                class_names=class_names,
+                with_label=False),
+            dict(type='Collect3D', keys=['img_inputs','bda'])
+            ]
+        )
+]
 
 input_modality = dict(
     use_lidar=False,
@@ -340,36 +340,72 @@ test_data_config = dict(
     sequences_split_num=test_sequences_split_num,
     ann_file=data_root + 'bevdetv2-nuscenes_infos_val.pkl')
 
-# data = dict(
-#     samples_per_gpu=samples_per_gpu,
-#     workers_per_gpu=6,
-#     test_dataloader=dict(runner_type='IterBasedRunnerEval'),
-#     train=dict(
-#         type=dataset_type,
-#         data_root=data_root,
-#         ann_file=data_root + 'bevdetv2-nuscenes_infos_train.pkl',
-#         pipeline=train_pipeline,
-#         classes=class_names,
-#         test_mode=False,
-#         use_valid_flag=True,
-#         modality=input_modality,
-#         img_info_prototype='bevdet',
-#         sequences_split_num=train_sequences_split_num,
-#         use_sequence_group_flag=True,
-#         filter_empty_gt=filter_empty_gt,
-#         # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
-#         # and box_type_3d='Depth' in sunrgbd and scannet dataset.
-#         box_type_3d='LiDAR'),
-#     val=test_data_config,
-#     test=test_data_config)
+#data = dict(
+#    samples_per_gpu=samples_per_gpu,
+#    workers_per_gpu=6,
+#    test_dataloader=dict(runner_type='IterBasedRunnerEval'),
+#    train=dict(
+#        type=dataset_type,
+#        data_root=data_root,
+#        ann_file=data_root + 'bevdetv2-nuscenes_infos_train.pkl',
+#        pipeline=train_pipeline,
+#        classes=class_names,
+#        test_mode=False,
+#        use_valid_flag=True,
+#        modality=input_modality,
+#        img_info_prototype='bevdet',
+#        sequences_split_num=train_sequences_split_num,
+#        use_sequence_group_flag=True,
+#        filter_empty_gt=filter_empty_gt,
+#        # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
+#        # and box_type_3d='Depth' in sunrgbd and scannet dataset.
+#        box_type_3d='LiDAR'),
+#    val=test_data_config,
+#    test=test_data_config)
+
+dummy_val_data = dict(
+    type=dataset_type,
+    data_root=data_root,
+    ann_file=data_root + 'bevdetv2-nuscenes_infos_val.pkl',
+    pipeline=test_pipeline,
+    classes=class_names,
+    test_mode=True,
+    use_valid_flag=True,
+    modality=input_modality,
+    img_info_prototype='bevdet',
+    sequences_split_num=test_sequences_split_num,
+    use_sequence_group_flag=True,
+    box_type_3d='LiDAR'
+)
+
+data = dict(
+    samples_per_gpu=1,
+    workers_per_gpu=4,
+    val=dummy_val_data,  # ?? dummy to pass compat_cfg check
+    test=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file=data_root + 'bevdetv2-nuscenes_infos_val.pkl',
+        pipeline=test_pipeline,
+        classes=class_names,
+        test_mode=True,
+        use_valid_flag=True,
+        modality=input_modality,
+        img_info_prototype='bevdet',
+        sequences_split_num=test_sequences_split_num,
+        use_sequence_group_flag=True,
+        box_type_3d='LiDAR'
+    )
+)
 
 for key in ['val', 'test']:
     data[key].update(share_data_config)
 
+
 # Optimizer
 lr = 2e-4
 optimizer = dict(type='AdamW', lr=lr, weight_decay=1e-2)
- 
+
 optimizer_config = dict(grad_clip=dict(max_norm=5, norm_type=2))
 lr_config = dict(
     policy='step',
@@ -411,18 +447,180 @@ val_dataloader = None
 train_pipeline = []
 val_pipeline = []
 
-test_dataloader = dict(
-    batch_size=1,
-    num_workers=4,
-    dataset=dict(
-        type='NuScenesDataset',
-        data_root='data/pandaset_nuscenes_format/',
-        ann_file='data/pandaset_nuscenes_format/sample.json',
-        pipeline=[],
-        modality=dict(use_camera=True, use_lidar=False),
-        test_mode=True,
-        use_valid_flag=True
-    )
-)
+
+#test_dataloader = dict(
+#    # batch_size=1,
+#    num_workers=4,
+#    dataset=dict(
+#        type='NuScenesDataset',
+#        data_root='data/pandaset_nuscenes_format/',
+#        ann_file='data/pandaset_nuscenes_format/bevdetv2-nuscenes_infos_val.pkl',
+#        # pipeline=[],
+#        pipeline=test_pipeline,
+#        modality=dict(use_camera=True, use_lidar=False),
+#        test_mode=True,
+#        use_valid_flag=True
+#    )
+#)
+
 
 test_cfg = dict(type='MultiScaleFlipAug3D', img_scale=(1600, 900))
+
+# COMMENTED OUT EVERYTHING ABOVE
+
+# Revised PandaSet inference config with fallback 'val' field for compatibility
+
+# Restored FB-BEV config for PandaSet (inference only)
+
+# print("🔧 [CONFIG DEBUG] Loaded fbocc-r50-pandaset-infer.py config")
+
+
+# _base_ = [
+#     '../_base_/datasets/pandaset_nuscenes.py',
+#     '../_base_/models/fbocc-r50.py',
+#     '../_base_/schedules/cyclic_20e.py',
+#     '../_base_/default_runtime.py'
+# ]
+
+# data_root = 'data/pandaset_nuscenes_format/'
+# dataset_type = 'NuScenesDataset'
+# class_names = [
+#     'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
+#     'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+# ]
+
+# # Restore full test_cfg and model config, just point to sample.json
+# ann_file = 'data/pandaset_nuscenes_format/bevdetv2-nuscenes_infos_val.pkl'
+
+# img_norm_cfg = dict(
+#     mean=[103.530, 116.280, 123.675],
+#     std=[1.0, 1.0, 1.0],
+#     to_rgb=False
+# )
+
+# test_pipeline = [
+#     dict(type='LoadMultiViewImageFromFiles', to_float32=True),
+#     dict(
+#         type='MultiScaleFlipAug',
+#         img_scale=(800, 448),
+#         flip=False,
+#         transforms=[
+#             dict(type='Resize', keep_ratio=True),
+#             dict(type='RandomFlip'),
+#             dict(type='Normalize', **img_norm_cfg),
+#             dict(type='Pad', size_divisor=32),
+#             dict(type='DefaultFormatBundle3D', class_names=[], with_label=False),
+#             dict(type='Collect3D', keys=['img']),
+#         ]
+#     )
+# ]
+
+# data = dict(
+#     val=dict(
+#         type=dataset_type,
+#         data_root=data_root,
+#         ann_file=ann_file,
+#         pipeline=[],
+#         modality=dict(use_camera=True, use_lidar=False),
+#         test_mode=True,
+#     ),
+#     test=dict(
+#         type=dataset_type,
+#         data_root=data_root,
+#         ann_file=ann_file,
+#         pipeline=[],
+#         modality=dict(use_camera=True, use_lidar=False),
+#         test_mode=True,
+#     )
+# )
+
+# model = dict(
+#     type='FBOCC',
+#     # use_grid_mask=True,
+#     # video_test_mode=False,
+#     img_backbone=dict(
+#         pretrained='torchvision://resnet50',
+#         type='ResNet',
+#         depth=50,
+#         num_stages=4,
+#         out_indices=(0, 1, 2, 3),
+#         frozen_stages=1,
+#         norm_cfg=dict(type='BN', requires_grad=False),
+#         norm_eval=True,
+#         style='pytorch'
+#     ),
+#     img_neck=dict(
+#         type='FPN',
+#         in_channels=[256, 512, 1024, 2048],
+#         out_channels=256,
+#         num_outs=4
+#     ),
+#     # img_view_transformer=dict(
+#     #     type='FBViewTransformerV2',
+#     #     in_channels=128,
+#     #     out_channels=80,
+#     #     downsample=8,
+#     #     lidar_start_height=-3.0,
+#     #     lidar_end_height=1.0,
+#     #     grid_config=dict(
+#     #         x=[-51.2, 51.2, 0.4],
+#     #         y=[-51.2, 51.2, 0.4],
+#     #         z=[-10.0, 10.0, 20.0],
+#     #         depth=[1.0, 60.0, 0.2]
+#     #     ),
+#     #     num_cams=6,
+#     #     bda_input=True,
+#     #     use_depth_supervision=False
+#     # ),
+#     img_bev_encoder_backbone=dict(
+#         type='ResNet',
+#         depth=18,
+#         num_stages=4,
+#         out_indices=(1, 2, 3),
+#         frozen_stages=0,
+#         norm_cfg=dict(type='BN', requires_grad=True),
+#         norm_eval=False,
+#         style='pytorch'
+#     ),
+#     img_bev_encoder_neck=dict(
+#         type='FPN',
+#         in_channels=[64, 128, 256],
+#         out_channels=160,
+#         num_outs=3
+#     ),
+#     forward_projection=dict(
+#         type='LSSViewTransformerFunction3D',
+#         grid_config=dict(
+#             x=[-40, 40, 0.8],
+#             y=[-40, 40, 0.8],
+#             z=[-1.0, 5.4, 0.8],
+#             depth=[2.0, 42.0, 0.5]
+#         ),
+#         input_size=(256, 704),
+#         downsample=16
+#     ),
+#     # occupancy_head=dict(
+#     #     type='OccHead',
+#     #     # bev_h=256,
+#     #     # bev_w=256,
+#     #     # bev_z=20,
+#     #     num_classes=18,
+#     #     loss_occ=dict(type='CustomFocalLoss')
+#     # )
+#     occupancy_head = dict(
+#         type='OccHead',
+#         in_channels=128,
+#         out_channel=18,
+#     )
+# )
+
+# test_cfg = dict(
+#     pts = dict(
+#         score_threshold=0.1,
+#         nms=dict(type='nms', iou_threshold=0.2),
+#         max_num=50
+#     )
+# )
+
+
+
