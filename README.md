@@ -62,3 +62,31 @@ If this work is helpful for your research, please consider citing:
 Many thanks to these excellent open source projects:
 
 - [BEVFormer](https://github.com/fundamentalvision/BEVFormer), [BEVDet](https://github.com/HuangJunJie2017/BEVDet), [Occ3D](https://github.com/Tsinghua-MARS-Lab/Occ3D), [OpenOccupancy](https://github.com/JeffWang987/OpenOccupancy), [SoloFusion](https://github.com/Divadi/SOLOFusion)
+
+## TAMU Spring 2025 Capstone
+
+This project adapts the original FB-BEV framework—designed for the nuScenes dataset—to work with the PandaSet dataset in a nuScenes-compatible format. Our overall goal is to enable the FB-BEV occupancy framework to operate fully with PandaSet, despite its lack of native nuScenes structure and LiDAR data.
+
+Our team's specific focus was on modifying the input pipeline to make camera-only inference compatible with PandaSet, having it output a BEV map based on its camera inputs. This required data formatting, pipeline patching, and configuration adjustments to support the framework’s expectations.
+
+--- Key Modifications & New Additions ---
+- Converted PandaSet into nuScenes format
+  - ```pandaset_pipeline/``` (New)
+- Config Updates
+    - ```occupancy_configs/_base_/models/fbocc-r50.py``` (Modified)
+    - ```occupancy_configs/fb_occ/fbocc-r50-pandaset-infer.py``` (New)
+- Pipeline Patching
+    - ```tools/test.py``` (Modified)
+    - ```mmdet3d/datasets/nuscenes_dataset.py``` (Modified)
+    - ```mmdet3d/datasets/pipelines/loading.py``` (Modified)
+
+
+--- How to Run ---
+- The files in ```pandaset_pipeline/``` are made to convert Pandaset into nuScenes format through a ```pkl``` file
+    - The order to run the files goes from ```run_all_extractions.py``` → ```cams_fix_sample_data_extraction.py``` → ```json_to_pkl.py```
+    - **NOTE: File pathings in the conversion scripts might need to be modified to better fit the current user's workflow*
+- Then to run the dataset through the system use ```python tools/test.py occupancy_configs/fb_occ/fbocc-r50-pandaset-infer.py ckpts/r50_256x705_depth_pretrain.pth --show-dir tmp_vis/```
+    - This uses our custom config file
+    - **NOTE: Will differ depending on the enviroment that the user chooses to run the system*
+- Lastly to visualize the dataset run ```python tools/analysis_tools/vis_occupancy_far.py test/fbocc-r50-pandaset-infer/<OUTPUT NAME>/occupancy_pred```
+
